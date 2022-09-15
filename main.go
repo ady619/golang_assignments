@@ -2,17 +2,22 @@ package main
 
 import (
     "fmt"
+	"os"
+	"encoding/json"
+	"io/ioutil"
+	"log"
 )
 
 type Account struct{
-	UserId int
+	UserId int `json:"UserId"`
 	Password string
 	Balance int
 }
 
-var accountList []Account
+var accountList *[]Account
+var dataFile string
 
-func NavigateToLoginScreen(){
+func EnterCredentials(){
 	fmt.Println("Please enter your user id: ")
 	var UserId int
 	fmt.Scan(&UserId)
@@ -23,42 +28,53 @@ func NavigateToLoginScreen(){
 }
 
 func Login(id int, pwd string){
-	found := false
-	var User Account
-	for _,item := range accountList{
+	// found := false
+	// var user Account
+	index := -1
+	for i,item := range *accountList{
 		if item.UserId == id {
-			found = true
-			User = item
+			index = i
 		}
 	}
+	user := &(*accountList)[index]
+	// fmt.Println(*accountList)
 
-	if found {
-
-		fmt.Println("Looged in user ",id,"\nPlease select an option from the menu below:")
-		fmt.Println("w -> Withdraw money\nd -> Diposit Money\nr -> Request Balance\nq -> Quit\n")
-
-		var option string
-		fmt.Scan(&option)
-
-		switch option {
-		case "w":
-			fmt.Println("Amount to withdraw: ")
-			var wamount int
-			fmt.Scan(&wamount)
-			User.WithdrawMoney(wamount)
-		case "d":
-			fmt.Println("Amount to diposit: ")
-			var damount int
-			fmt.Scan(&damount)
-			User.DipositMoney(damount)
-		case "r":
-			User.RequestBalance()
-		default:
-			QuitProgram()
-		}
+	if index > -1 {
+		fmt.Println("\nLooged in user :",(*user).UserId)
+		UserHomeScreen(user)
 	} else {
-		fmt.Println("Invalid userid or password")
+		fmt.Println("\n!! Invalid userid or password !!\n")
 		home()
+	}
+}
+
+func UserHomeScreen(user *Account){
+	
+	START:
+	fmt.Println("\nPlease select an option from the menu below:")
+	fmt.Println("w -> Withdraw money\nd -> Diposit Money\nr -> Request Balance\nl -> Log out\n")
+
+	var option string
+	fmt.Scan(&option)
+
+	switch option {
+	case "w":
+		fmt.Println("Amount to withdraw: ")
+		var amount int
+		fmt.Scan(&amount)
+		(*user).WithdrawMoney(amount)
+	case "d":
+		fmt.Println("Amount to diposit: ")
+		var amount int
+		fmt.Scan(&amount)
+		(*user).DipositMoney(amount)
+	case "r":
+		(*user).RequestBalance()
+	case "l":
+		home()
+	default:
+		fmt.Println("\n!! Invalid Option selected !!\n")
+		goto START
 	}
 }
 
@@ -70,55 +86,104 @@ func NavigateToCreateAccountScreen(){
 	var Password string
 	fmt.Scan(&Password)
 	user := Account{UserId, Password, 0}
-	user.CreateAccount()
+	CreateAccount(&user)
 }
 
-func (user Account) CreateAccount(){
-	accountList = append(accountList, user)
+func CreateAccount(user *Account){
+	*accountList = append(*accountList, *user)
+	fmt.Println("\nLooged in user :",(*user).UserId)
+	content,err := json.Marshal(accountList)
+	if err != nil{
+		fmt.Println(err)
+	}
+	
+	if err = ioutil.WriteFile(dataFile, content, 0644); err != nil{
+		log.Fatal(err)
+	}
 	fmt.Println(accountList)
-	home()
+	UserHomeScreen(user)
 }
 
-func (ac Account) WithdrawMoney(amount int){
-	ac.Balance = ac.Balance - amount
+func (user *Account) WithdrawMoney(amount int){
+	(*user).Balance = (*user).Balance - amount
 	fmt.Println("Money withdrawn: ",amount)
-	home()
+	fmt.Println(accountList)
+	UserHomeScreen(user)
 }
 
-func (ac Account) DipositMoney(amount int){
-	ac.Balance = ac.Balance + amount
+func (user *Account) DipositMoney(amount int){
+	(*user).Balance = (*user).Balance + amount
 	fmt.Println("Money Diposited: ",amount)
-	home()
+	fmt.Println(accountList)
+	UserHomeScreen(user)
 }
 
-func (ac Account) RequestBalance(){
-	fmt.Println("Balance: ",ac.Balance)
-	home()
+func (user *Account) RequestBalance(){
+	fmt.Println("Balance: ",(*user).Balance)
+	fmt.Println(accountList)
+	UserHomeScreen(user)
 }
 
 func QuitProgram(){
-	home()
+	content,err := json.Marshal(accountList)
+	fmt.Println(accountList)
+	fmt.Println(string(content))
+	if err != nil{
+		log.Fatal(err)
+	}
+	
+	if err = ioutil.WriteFile(dataFile, content, 0644); err != nil{
+		log.Fatal(err)
+	}
+	os.Exit(3)
 }
 
 func main() {
-	accountList = make([]Account, 0, 1)
+	dataFile = "dataFile.json"
+	file,err := os.Open(dataFile)
+	if err != nil{
+		_,err := os.Create(dataFile)
+		if err != nil{
+			panic(err)
+		}
+		main()
+	}
+	defer file.Close()
+
+	var userList []Account
+	if err = json.NewDecoder(file).Decode(&userList);err != nil {
+		err = ioutil.WriteFile(dataFile, []byte("[]"), 0644)
+		if err != nil{
+			log.Fatal(err)
+		}
+		main()
+	}
+
+	list := make([]Account, 0, 1)
+	accountList = &list
+	*accountList = append(list, userList...)
+
+	fmt.Println(*accountList)
 	home()
 }
 
 func home(){
-	fmt.Println("Hi! Welcome to Mr. Rohit ATM Machine!\nPlease select an option from the menu below:")
-	fmt.Println("l -> Login\nc -> Create New Account\nq -> Quit\n")
+	fmt.Println("\nHi! Welcome to Aditya ATM Machine!")
+	START:
+	fmt.Println("Please select an option from the menu below:")
+	fmt.Println("l -> Login\nc -> Create New Account\nq -> Quit")
 	var option string
 	fmt.Scan(&option)
 
 	switch option {
 	case "l":
-		NavigateToLoginScreen()
+		EnterCredentials()
 	case "c":
 		NavigateToCreateAccountScreen()
 	case "q":
 		QuitProgram()
 	default:
-		QuitProgram()
+		fmt.Println("\n!! Invalid Option selected !!\n")
+		goto START
 	}
 }
