@@ -28,8 +28,6 @@ func EnterCredentials(){
 }
 
 func Login(id int, pwd string){
-	// found := false
-	// var user Account
 	index := -1
 	for i,item := range *accountList{
 		if item.UserId == id {
@@ -37,7 +35,6 @@ func Login(id int, pwd string){
 		}
 	}
 	user := &(*accountList)[index]
-	// fmt.Println(*accountList)
 
 	if index > -1 {
 		fmt.Println("\nLooged in user :",(*user).UserId)
@@ -92,7 +89,7 @@ func NavigateToCreateAccountScreen(){
 func CreateAccount(user *Account){
 	*accountList = append(*accountList, *user)
 	fmt.Println("\nLooged in user :",(*user).UserId)
-	content,err := json.Marshal(accountList)
+	content,err := json.Marshal(*accountList)
 	if err != nil{
 		fmt.Println(err)
 	}
@@ -100,33 +97,33 @@ func CreateAccount(user *Account){
 	if err = ioutil.WriteFile(dataFile, content, 0644); err != nil{
 		log.Fatal(err)
 	}
-	fmt.Println(accountList)
+	
 	UserHomeScreen(user)
 }
 
 func (user *Account) WithdrawMoney(amount int){
 	(*user).Balance = (*user).Balance - amount
 	fmt.Println("Money withdrawn: ",amount)
-	fmt.Println(accountList)
+	
 	UserHomeScreen(user)
 }
 
 func (user *Account) DipositMoney(amount int){
 	(*user).Balance = (*user).Balance + amount
 	fmt.Println("Money Diposited: ",amount)
-	fmt.Println(accountList)
+	
 	UserHomeScreen(user)
 }
 
 func (user *Account) RequestBalance(){
 	fmt.Println("Balance: ",(*user).Balance)
-	fmt.Println(accountList)
+	
 	UserHomeScreen(user)
 }
 
 func QuitProgram(){
-	content,err := json.Marshal(accountList)
-	fmt.Println(accountList)
+	content,err := json.Marshal(*accountList)
+	
 	fmt.Println(string(content))
 	if err != nil{
 		log.Fatal(err)
@@ -163,7 +160,7 @@ func main() {
 	accountList = &list
 	*accountList = append(list, userList...)
 
-	fmt.Println(*accountList)
+	
 	home()
 }
 
