@@ -8,6 +8,8 @@ import (
 	"log"
 )
 
+// create a simple atm machine
+
 type Account struct{
 	UserId int `json:"UserId"`
 	Password string
