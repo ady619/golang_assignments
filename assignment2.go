@@ -13,8 +13,8 @@ func main(){
 }
 
 func SumWithoutOPperators(a int,b int)int{
-	m := make([]int, a, a)
-	n := make([]int, b, b)
+	m := make([]int, a)
+	n := make([]int, b)
 	m = append(m, n...)
 	return len(m)
 }
